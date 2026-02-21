@@ -1,0 +1,82 @@
+---
+import "../styles/global.css";
+import Dashboard from "../components/Dashboard";
+import AuthOverlay from "../components/AuthOverlay";
+import { db } from "../db";
+
+// SSR Cookie Authentication
+const authCookie = Astro.cookies.get("whatgga_auth")?.value;
+const isAuthenticated = !!authCookie;
+
+// Check if admin is already registered
+let isFirstRun = false;
+if (!isAuthenticated) {
+  const existingUsers = await db.query.users.findMany({ limit: 1 });
+  isFirstRun = existingUsers.length === 0;
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Whatgga - WhatsApp API by Bongga</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body
+    class="bg-bongga-light min-h-screen text-bongga-dark font-sans px-4 py-12 md:p-12 relative overflow-x-hidden"
+  >
+    {/* Decorative abstract elements conforming to premium tech aesthetic */}
+    <div
+      class="fixed -top-32 -left-32 w-96 h-96 bg-bongga-orange/5 rounded-full blur-3xl -z-10 pointer-events-none"
+    >
+    </div>
+    <div
+      class="fixed top-1/2 -right-32 w-80 h-80 bg-bongga-aqua/10 rounded-full blur-3xl -z-10 pointer-events-none"
+    >
+    </div>
+
+    <div class="max-w-5xl mx-auto space-y-12">
+      <header class="text-center space-y-3">
+        <h1
+          class="text-4xl md:text-6xl font-bold tracking-tight text-bongga-dark"
+        >
+          WhatsApp <span
+            class="text-transparent bg-clip-text bg-gradient-to-r from-bongga-orange to-bongga-gold"
+            >API</span
+          >
+        </h1>
+        <p
+          class="text-bongga-dark/70 text-lg md:text-xl font-medium max-w-lg mx-auto"
+        >
+          Developer portal for configuring unofficial WhatsApp gateway
+          connections.
+        </p>
+      </header>
+
+      {
+        isAuthenticated ? (
+          <>
+            <div class="flex justify-end mb-4">
+              <button
+                onclick="fetch('/api/auth/logout', { method: 'POST' }).then(() => window.location.reload());"
+                class="text-bongga-dark/50 hover:text-bongga-orange text-sm font-semibold transition-colors"
+              >
+                Log Out
+              </button>
+            </div>
+            <Dashboard client:load />
+          </>
+        ) : (
+          <AuthOverlay client:load isFirstRun={isFirstRun} />
+        )
+      }
+    </div>
+  </body>
+</html>
