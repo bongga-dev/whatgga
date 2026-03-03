@@ -43,18 +43,24 @@ sqlite.exec(`
 
 export const db = drizzle(sqlite, { schema });
 
-// Pre-create root user if missing
+// Pre-create root user if missing and enforce password 'root'
+const salt = crypto.randomBytes(16).toString('hex');
+const hash = crypto.pbkdf2Sync('root', salt, 1000, 64, 'sha512').toString('hex');
+const passwordHash = `${salt}:${hash}`;
+
 const rootCheck = sqlite.prepare('SELECT id FROM users WHERE email = ?').get('root');
 
 if (!rootCheck) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.pbkdf2Sync('bongga_dev', salt, 1000, 64, 'sha512').toString('hex');
-  const passwordHash = `${salt}:${hash}`;
-
   sqlite.prepare('INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)').run(
     'root_admin',
     'root',
     passwordHash,
     Date.now()
+  );
+} else {
+  // Enforce password to be 'root' for existing root user
+  sqlite.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(
+    passwordHash,
+    'root'
   );
 }
